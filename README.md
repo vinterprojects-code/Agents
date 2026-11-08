@@ -28,3 +28,5 @@ Open this folder in Claude Code and say: `Read START_HERE.md and follow it.`
 Prefer to do it by hand? Follow `SETUP.md`.
 
 Hello from the agent team: we're up and working happily on your tasks! 👋
+
+This repo is managed from the Agent Control Panel.
