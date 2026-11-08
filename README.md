@@ -26,3 +26,5 @@ From the GitHub app: Issues → New → "Agent task" → describe what you want 
 ## Set up
 Open this folder in Claude Code and say: `Read START_HERE.md and follow it.`
 Prefer to do it by hand? Follow `SETUP.md`.
+
+Hello from the agent team: we're up and working happily on your tasks! 👋
