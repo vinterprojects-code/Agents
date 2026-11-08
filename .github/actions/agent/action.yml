@@ -55,6 +55,7 @@ runs:
           > agent_handoff/issue.md
 
     - name: Agent working
+      id: claude
       uses: anthropics/claude-code-action@v1
       with:
         claude_code_oauth_token: ${{ inputs.oauth_token }}
@@ -70,6 +71,20 @@ runs:
           --model claude-sonnet-5-5
           --max-turns ${{ inputs.max_turns }}
           --allowedTools "${{ inputs.allowed_tools }}"
+
+    - name: Show why the agent stopped
+      if: failure()
+      shell: bash
+      env:
+        EXEC_FILE: ${{ steps.claude.outputs.execution_file }}
+      run: |
+        F="${EXEC_FILE:-$RUNNER_TEMP/claude-execution-output.json}"
+        if [ -f "$F" ]; then
+          jq -r '[.[] | select(.type == "result")] | last | "Result: \(.subtype)\n\(.result // .errors // "no message")"' "$F" || true
+          jq -r '.[] | select(.type == "assistant") | .message.content[]? | select(.type == "text") | .text' "$F" | tail -n 20 || true
+        else
+          echo "No execution log found."
+        fi
 
     - name: Guard read-only agents
       if: inputs.readonly == 'true'
