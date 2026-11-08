@@ -7,10 +7,10 @@ through files in the `agent_handoff/` folder.
 
 ## Project context (edit this)
 
-- What this repo is: <one line, e.g. "PrestaShop module for shipment tracking">
-- Stack and versions: <e.g. PHP 8.1, PrestaShop 8.x, Composer>
-- How to run tests: <e.g. `composer test` or `vendor/bin/phpunit`>
-- Coding standards: <e.g. PSR-12, no core overrides, use PrestaShop hooks>
+- What this repo is: The Vinter Projects agent team (manager, developer, QA) and the general/mixed tasks given to it. No single product stack yet.
+- Stack and versions: Not fixed yet. Markdown, YAML (GitHub Actions) and a static HTML dashboard (`dashboard/index.html`). Match whatever stack an issue is about.
+- How to run tests: No test suite yet. Check changed files by hand (for example, valid YAML, the dashboard opening in a browser) and say what you checked.
+- Coding standards: Keep changes small and match the existing style of the file you edit.
 
 ## The chain
 
