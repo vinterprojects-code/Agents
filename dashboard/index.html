@@ -2,265 +2,139 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Agent team</title>
-<style>
-:root{--bg:#faf9f5;--card:#fff;--surface:#f1efe8;--text:#1f1e1d;--muted:#6b6a65;--border:#d9d6cc;--strong:#a8a59b;--accent:#185FA5;--accent-bg:#E6F1FB;--warn:#854F0B;--warn-bg:#FAEEDA;--ok:#3B6D11;--ok-bg:#EAF3DE;--bad:#A32D2D;--bad-bg:#FCEBEB}
-@media (prefers-color-scheme:dark){:root{--bg:#1f1e1d;--card:#2b2a28;--surface:#35332f;--text:#f1efe8;--muted:#b4b2a9;--border:#444441;--strong:#6b6a65;--accent:#85B7EB;--accent-bg:#042C53;--warn:#FAC775;--warn-bg:#412402;--ok:#97C459;--ok-bg:#173404;--bad:#F09595;--bad-bg:#501313}}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
-main{max-width:420px;margin:0 auto;padding:16px}
-h1{font-size:20px;font-weight:500;margin:0 0 2px}
-#sub{font-size:13px;color:var(--muted);margin:0 0 12px;word-break:break-word}
-#sub a{color:var(--accent)}
-details{background:var(--card);border:0.5px solid var(--border);border-radius:12px;padding:10px 14px;margin-bottom:14px}
-summary{font-size:14px;cursor:pointer}
-label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
-input{width:100%;height:36px;border:0.5px solid var(--strong);border-radius:8px;background:var(--bg);color:var(--text);padding:0 10px;font-size:14px}
-.row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
-button{height:36px;padding:0 14px;border:0.5px solid var(--strong);border-radius:8px;background:transparent;color:var(--text);font-size:14px;cursor:pointer}
-button:active{transform:scale(.98)}
-.hint{font-size:12px;color:var(--muted);margin:8px 0 0}
-#w{position:relative;width:100%;aspect-ratio:380/430}
-.cd{position:absolute;background:var(--card);border:0.5px solid var(--border);border-radius:12px;padding:10px;overflow:hidden}
-.hd{display:flex;align-items:center;gap:8px}
-.av{width:44px;height:44px;flex:none;border-radius:50%;overflow:hidden}
-.working .av svg{animation:bob 1.1s ease-in-out infinite}
-@keyframes bob{50%{transform:translateY(2px)}}
-.nm{font-size:14px;font-weight:500;margin:0 0 3px}
-.pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:2px 8px;border-radius:999px;background:var(--surface);color:var(--muted)}
-.dot{width:6px;height:6px;border-radius:50%;background:currentColor}
-.working .pill{background:var(--accent-bg);color:var(--accent)}.working .dot{animation:pulse 1s infinite}
-.waiting .pill{background:var(--warn-bg);color:var(--warn)}
-.done .pill{background:var(--ok-bg);color:var(--ok)}
-.failed .pill{background:var(--bad-bg);color:var(--bad)}
-@keyframes pulse{50%{opacity:.25}}
-.act{font-size:12px;color:var(--muted);margin:8px 0 6px;line-height:1.35;min-height:32px}
-.pr{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)}.pr .bar{flex:1;margin:0}
-.bar{height:5px;border-radius:3px;background:var(--surface);overflow:hidden;margin-bottom:4px}
-.bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .6s}
-.code i{width:35%}
-.working .code i{animation:type 1.5s ease-in-out infinite alternate}
-.code .bar:nth-child(2) i{animation-delay:.3s;width:60%}
-@keyframes type{from{width:10%}to{width:85%}}
-.chip{display:inline-block;font-size:11px;padding:2px 8px;border-radius:6px;background:var(--surface);color:var(--muted)}
-.chip.pass{background:var(--ok-bg);color:var(--ok)}.chip.fail{background:var(--bad-bg);color:var(--bad)}
-svg.ln{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-.l{fill:none;stroke:var(--strong);stroke-width:2;stroke-linecap:round;stroke-dasharray:1 7;animation:flow 2.5s linear infinite}
-.l.faint{opacity:.55}
-.l.on{stroke:var(--accent);stroke-width:3;animation-duration:.45s}
-.l.on.rev{animation-direction:reverse;stroke:var(--bad)}
-@keyframes flow{to{stroke-dashoffset:-16}}
-.ar{fill:var(--strong)}
-#pk{position:absolute;display:none;transform:translate(-50%,-50%);font-size:11px;font-weight:500;color:#fff;padding:3px 9px;border-radius:999px;white-space:nowrap;z-index:5}
-#foot{font-size:12px;color:var(--muted);margin-top:12px}
-#foot a{color:var(--accent)}
-</style>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#0B0F1A">
+<title>Agent Control Panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<main>
-<h1>Agent team</h1>
-<p id="sub">Not connected</p>
 
-<details id="set" open>
-<summary>Connection</summary>
-<label for="repo">Repository (owner/name)</label>
-<input id="repo" placeholder="your-name/your-repo" autocomplete="off" autocapitalize="off">
-<label for="tok">Read-only token (needed for private repos)</label>
-<input id="tok" type="password" placeholder="github_pat_..." autocomplete="off">
-<div class="row">
-<button id="connect">Connect</button>
-<button id="demo">Preview demo</button>
+<!-- Connect screen: shown until a token is saved -->
+<section id="connect" class="connect" hidden aria-labelledby="connect-title">
+  <div class="connect-card">
+    <h1 id="connect-title">Connect GitHub</h1>
+    <p class="muted">The control panel talks to the GitHub API straight from this browser. It needs a fine-grained personal access token for this repository.</p>
+    <ol class="steps">
+      <li>Open <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub → New fine-grained token</a>.</li>
+      <li>Repository access: <strong>Only select repositories</strong> → this repo.</li>
+      <li>Repository permissions, <strong>Read and write</strong>: Actions, Contents, Issues, Pull requests. <strong>Read</strong>: Commit statuses (and Checks if listed). Metadata is added automatically.</li>
+      <li>Generate the token and paste it below.</li>
+    </ol>
+    <form id="connect-form" novalidate>
+      <label for="connect-repo">Repository (owner/name)</label>
+      <input id="connect-repo" name="repo" autocomplete="off" autocapitalize="off" spellcheck="false" required placeholder="owner/repo">
+      <label for="connect-token">Fine-grained token</label>
+      <input id="connect-token" name="token" type="password" autocomplete="off" spellcheck="false" required placeholder="github_pat_…">
+      <p class="muted small">The token is stored only in this browser's localStorage and is sent only to api.github.com. Use Disconnect in Settings to remove it.</p>
+      <p id="connect-error" class="error-box" role="alert" hidden></p>
+      <button type="submit" class="btn primary block" id="connect-submit">Connect</button>
+    </form>
+  </div>
+</section>
+
+<!-- Main app -->
+<div id="app" class="app" hidden>
+  <aside class="sidebar" aria-label="Main">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <div>
+        <div class="brand-name">Agent Control Panel</div>
+        <div class="brand-repo mono" id="side-repo"></div>
+      </div>
+    </div>
+    <button type="button" class="btn primary block" data-action="new-task">+ New task</button>
+    <nav class="side-nav">
+      <button type="button" class="nav-btn" data-route="overview">Overview</button>
+      <button type="button" class="nav-btn" data-route="tasks">Tasks</button>
+      <button type="button" class="nav-btn" data-route="prs">Pull requests</button>
+      <button type="button" class="nav-btn" data-route="settings">Settings</button>
+    </nav>
+    <div class="side-foot">
+      <div class="live" id="live-side" aria-live="off"></div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <h1 id="page-title">Overview</h1>
+      <div class="live" id="live-top"></div>
+    </header>
+    <div id="banner" class="banner" role="alert" hidden></div>
+    <main id="view" tabindex="-1"></main>
+  </div>
+
+  <nav class="bottom-nav" aria-label="Main">
+    <button type="button" class="nav-btn" data-route="overview"><span class="nav-ico" aria-hidden="true">◎</span>Overview</button>
+    <button type="button" class="nav-btn" data-route="tasks"><span class="nav-ico" aria-hidden="true">▤</span>Tasks</button>
+    <button type="button" class="nav-btn" data-route="prs"><span class="nav-ico" aria-hidden="true">⇄</span>PRs</button>
+    <button type="button" class="nav-btn" data-route="settings"><span class="nav-ico" aria-hidden="true">⚙</span>Settings</button>
+  </nav>
+  <button type="button" class="fab" data-action="new-task">+ New task</button>
 </div>
-<p class="hint">The token stays in this browser only. Give it read access to Actions and Pull requests, nothing else.</p>
-</details>
 
-<div id="w">
-<svg class="ln" viewBox="0 0 380 430" preserveAspectRatio="none" aria-hidden="true">
-<path id="ln1" class="l" d="M190 134V192H82V250"/>
-<path id="ln2" class="l" d="M168 340H212"/>
-<path id="ln3" class="l faint" d="M297 255V65H289"/>
-<polygon class="ar" points="76,250 88,250 82,260"/>
-<polygon class="ar" points="212,334 212,346 222,340"/>
-<polygon class="ar" points="289,59 289,71 279,65"/>
-</svg>
-<div class="cd" id="c0" style="left:25%;top:0;width:50%;height:31%"></div>
-<div class="cd" id="c1" style="left:0;top:59%;width:44%;height:41%"></div>
-<div class="cd" id="c2" style="left:56%;top:59%;width:44%;height:41%"></div>
-<div id="pk"></div>
-</div>
-<p id="foot"></p>
-</main>
+<!-- New task -->
+<dialog id="new-task" class="modal" aria-labelledby="nt-title">
+  <form id="new-task-form" method="dialog" novalidate>
+    <div class="modal-head">
+      <h2 id="nt-title">New task</h2>
+      <button type="button" class="btn ghost icon" data-close aria-label="Close">✕</button>
+    </div>
+    <p class="muted small">Creates a GitHub issue in the "Agent task" format with the <span class="mono">agent-task</span> label, which starts the team.</p>
+    <label for="nt-name">Title</label>
+    <input id="nt-name" name="title" required maxlength="200" autocomplete="off">
+    <label for="nt-details">What you want</label>
+    <textarea id="nt-details" name="details" rows="5" required></textarea>
+    <label for="nt-done">Done when <span class="muted">(one per line, optional)</span></label>
+    <textarea id="nt-done" name="done" rows="3"></textarea>
+    <label for="nt-avoid">Don't touch <span class="muted">(optional)</span></label>
+    <input id="nt-avoid" name="avoid" autocomplete="off">
+    <fieldset>
+      <legend>Starting agent</legend>
+      <div class="choice-row">
+        <label class="choice"><input type="radio" name="agent" value="manager" checked><span><span class="agent-dot manager" aria-hidden="true"></span>Manager <span class="muted small">plans first</span></span></label>
+        <label class="choice"><input type="radio" name="agent" value="developer"><span><span class="agent-dot developer" aria-hidden="true"></span>Developer <span class="muted small">skips planning</span></span></label>
+      </div>
+      <p class="muted small">QA can't start a task: it tests the developer's work.</p>
+    </fieldset>
+    <fieldset>
+      <legend>Priority</legend>
+      <div class="choice-row">
+        <label class="choice"><input type="radio" name="priority" value="low"><span>Low</span></label>
+        <label class="choice"><input type="radio" name="priority" value="normal" checked><span>Normal</span></label>
+        <label class="choice"><input type="radio" name="priority" value="high"><span>High</span></label>
+      </div>
+    </fieldset>
+    <div id="nt-result" role="status" aria-live="polite"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn" data-close>Cancel</button>
+      <button type="submit" class="btn primary" id="nt-submit">Create task</button>
+    </div>
+  </form>
+</dialog>
 
-<script>
-const $=id=>document.getElementById(id);
-const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
-const av=(bg,body,hair,skin,extra)=>'<svg viewBox="0 0 64 64" width="44" height="44"><rect width="64" height="64" fill="'+bg+'"/><path d="M10 66Q10 46 32 46Q54 46 54 66Z" fill="'+body+'"/><rect x="28" y="38" width="8" height="9" fill="'+skin+'"/><circle cx="32" cy="30" r="13" fill="'+skin+'"/><path d="M19 29Q18 13 32 13Q46 13 45 29Q40 21 32 22Q24 21 19 29Z" fill="'+hair+'"/><circle cx="27.5" cy="31" r="1.4" fill="#2C2C2A"/><circle cx="36.5" cy="31" r="1.4" fill="#2C2C2A"/><path d="M28 37Q32 40 36 37" stroke="#8A5436" stroke-width="1.5" fill="none" stroke-linecap="round"/>'+extra+'</svg>';
-const A=[
-{n:'Manager',svg:av('#EEEDFE','#534AB7','#2C2C2A','#E8B894','<path d="M26 45L32 52L30 45Z" fill="#fff"/><path d="M38 45L32 52L34 45Z" fill="#fff"/><path d="M32 49l-3 4 3 11 3-11z" fill="#FAC775"/>'),x:'<div class="pr"><div class="bar"><i id="pb"></i></div><span id="pt">0/4</span></div>'},
-{n:'Developer',svg:av('#E1F5EE','#1D9E75','#6B4423','#C98B63','<path d="M17 31Q16 9 32 9Q48 9 47 31" stroke="#2C2C2A" stroke-width="3" fill="none"/><rect x="14" y="27" width="6" height="10" rx="3" fill="#85B7EB"/><rect x="44" y="27" width="6" height="10" rx="3" fill="#85B7EB"/><path d="M29 47v8M35 47v8" stroke="#E1F5EE" stroke-width="1.5"/>'),x:'<div class="code"><div class="bar"><i></i></div><div class="bar"><i></i></div></div>'},
-{n:'QA',svg:av('#FAECE7','#D85A30','#712B13','#F5CBA7','<circle cx="46" cy="22" r="5" fill="#712B13"/><circle cx="27.5" cy="31" r="5" stroke="#2C2C2A" stroke-width="1.5" fill="none"/><circle cx="36.5" cy="31" r="5" stroke="#2C2C2A" stroke-width="1.5" fill="none"/><rect x="29" y="50" width="6" height="14" fill="#FAC775"/>'),x:'<span class="chip" id="vc">No verdict yet</span> <span class="chip" id="rc">Round 1</span>'}];
-A.forEach((a,i)=>{$('c'+i).innerHTML='<div class="hd"><div class="av">'+a.svg+'</div><div><p class="nm">'+a.n+'</p><span class="pill"><span class="dot"></span><span id="p'+i+'">Ready</span></span></div></div><p class="act" id="a'+i+'">Ready for a task</p>'+a.x;});
-function set(i,cls,label,text){$('c'+i).className='cd '+cls;$('p'+i).textContent=label;$('a'+i).textContent=text;}
+<!-- Confirm -->
+<dialog id="confirm" class="modal small" aria-labelledby="cf-title">
+  <form method="dialog">
+    <h2 id="cf-title"></h2>
+    <p id="cf-text" class="pre"></p>
+    <div class="modal-actions">
+      <button type="submit" value="cancel" class="btn">Cancel</button>
+      <button type="submit" value="ok" class="btn primary" id="cf-ok">Confirm</button>
+    </div>
+  </form>
+</dialog>
 
-const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-const w=$('w'),pk=$('pk');
-function send(id,rev,label,color){return new Promise(res=>{
-const p=$(id),len=p.getTotalLength();
-p.classList.add('on');if(rev)p.classList.add('rev');
-pk.textContent=label;pk.style.background=color;pk.style.display='block';
-const t0=performance.now(),dur=1500;
-function step(now){
-const v=Math.min(1,(now-t0)/dur),e=v<.5?2*v*v:1-Math.pow(-2*v+2,2)/2;
-const pt=p.getPointAtLength((rev?1-e:e)*len);
-pk.style.left=pt.x*w.clientWidth/380+'px';pk.style.top=pt.y*w.clientHeight/430+'px';
-if(v>=1){pk.style.display='none';p.classList.remove('on','rev');res();}else requestAnimationFrame(step);}
-requestAnimationFrame(step);});}
+<!-- Task detail drawer -->
+<dialog id="task-panel" class="drawer" aria-labelledby="tp-title">
+  <div class="drawer-inner" id="task-panel-body"></div>
+</dialog>
 
-const HANDOFFS=[
-['manager','developer','Task','#185FA5','ln1',false],
-['developer','qa','Build','#0F6E56','ln2',false],
-['qa','developer-fix','Bug report','#A32D2D','ln2',true],
-['developer-fix','qa-retest','Fix','#0F6E56','ln2',false],
-['qa','finalize','Approved','#3B6D11','ln3',false],
-['qa-retest','finalize','Approved','#3B6D11','ln3',false]];
-const NAMES=['manager','developer','qa','developer-fix','qa-retest','finalize'];
-let played=new Set(),firstRender=true,queue=Promise.resolve(),prShown='';
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
-function jstate(j){if(!j)return 'none';if(j.status==='completed')return j.conclusion==='success'?'done':(j.conclusion==='skipped'?'skipped':'failed');if(j.status==='in_progress')return 'working';return 'queued';}
-function verdictOf(j){if(!j||!j.steps)return '';const s=j.steps.find(x=>x.name&&x.name.indexOf('Verdict: ')===0&&(!x.status||x.status==='completed'));return s?s.name.slice(9).trim():'';}
-
-function render(run,jobs){
-if(!run){for(let i=0;i<3;i++)set(i,'idle','Ready','Ready for a task');return;}
-const J={};jobs.forEach(j=>J[j.name]=j);
-const S={};NAMES.forEach(n=>S[n]=jstate(J[n]));
-const active=run.status!=='completed';
-const blocked=!active&&S.manager==='done'&&(S.developer==='skipped'||S.developer==='none');
-const failedAny=NAMES.some(n=>S[n]==='failed');
-const v2=verdictOf(J['qa-retest']),v1=verdictOf(J.qa),v=v2||v1;
-
-let m;
-if(S.manager==='failed'||S.finalize==='failed')m=['failed','Failed','A step failed. Open the run for details'];
-else if(S.manager==='working')m=['working','Working','Writing the plan'];
-else if(S.finalize==='working')m=['working','Working','Reviewing and opening the pull request'];
-else if(S.finalize==='done')m=['done','Done','Pull request opened'];
-else if(blocked)m=['waiting','Needs you','Needs your input. Check the issue'];
-else if(S.manager==='done'&&active)m=['idle','Standing by','Watching the team'];
-else if(S.manager==='queued'&&active)m=['waiting','Waiting','Waiting to start'];
-else if(!active&&S.manager==='done')m=['done','Done','Plan delivered'];
-else m=['idle','Ready','Ready for a task'];
-set(0,m[0],m[1],m[2]);
-
-let d;
-if(S.developer==='failed'||S['developer-fix']==='failed')d=['failed','Failed','A step failed. Open the run for details'];
-else if(S.developer==='working')d=['working','Working','Coding the feature'];
-else if(S['developer-fix']==='working')d=['working','Working','Fixing the bug QA found'];
-else if((S.finalize==='working'||S.finalize==='done')||(!active&&S.developer==='done'))d=['done','Done','Work delivered'];
-else if(S.developer==='done'&&active)d=['waiting','Waiting','Waiting for QA'];
-else if(S.developer==='queued'&&active)d=['waiting','Waiting','Waiting for the plan'];
-else d=['idle','Ready','Ready for a task'];
-set(1,d[0],d[1],d[2]);
-
-let q;
-if(S.qa==='failed'||S['qa-retest']==='failed')q=['failed','Failed','A step failed. Open the run for details'];
-else if(S.qa==='working')q=['working','Testing','Testing the build'];
-else if(S['qa-retest']==='working')q=['working','Testing','Re-testing the fix'];
-else if((S.finalize==='working'||S.finalize==='done')||(!active&&S.qa==='done'))q=[v==='PASS'?'done':'failed',v==='PASS'?'Done':'Not passed','Final verdict: '+(v||'none')];
-else if(S.qa==='done'&&active)q=['waiting','Waiting',v==='FAIL'?'Bug report sent, waiting for the fix':'Report sent'];
-else if(S.qa==='queued'&&active)q=['waiting','Waiting','Waiting for a build'];
-else q=['idle','Ready','Ready for a task'];
-set(2,q[0],q[1],q[2]);
-
-const real=NAMES.filter(n=>S[n]!=='skipped'&&S[n]!=='none');
-const done=real.filter(n=>S[n]==='done').length;
-const total=Math.max(real.length,4);
-$('pb').style.width=Math.round(done/total*100)+'%';
-$('pt').textContent=done+'/'+total;
-const vc=$('vc');vc.textContent=v?'Verdict: '+v:'No verdict yet';vc.className='chip'+(v==='PASS'?' pass':v==='FAIL'?' fail':'');
-$('rc').textContent=['working','done','failed'].indexOf(S['qa-retest'])>=0?'Round 2':'Round 1';
-
-const sub=$('sub');
-sub.innerHTML='';
-const t=document.createElement('span');t.textContent=(run.display_title||'Task')+' · '+(active?'running':failedAny?'finished with errors':blocked?'waiting for you':'finished')+(run.html_url&&run.html_url!=='#'?' · ':'');
-sub.appendChild(t);
-if(run.html_url&&run.html_url!=='#'){const a=document.createElement('a');a.href=run.html_url;a.textContent='open run';a.target='_blank';a.rel='noopener';sub.appendChild(a);}
-
-HANDOFFS.forEach(h=>{
-const key=run.id+':'+h[0]+'>'+h[1];
-if(played.has(key))return;
-const toStarted=S[h[1]]==='working'||S[h[1]]==='done'||S[h[1]]==='failed';
-const fromDone=S[h[0]]==='done';
-if(!(fromDone&&toStarted))return;
-if(h[0]==='qa'&&h[1]==='finalize'&&v1!=='PASS')return;
-if(h[0]==='qa'&&h[1]==='developer-fix'&&v1!=='FAIL')return;
-played.add(key);
-const st=J[h[1]]&&J[h[1]].started_at?Date.parse(J[h[1]].started_at):0;
-const fresh=!firstRender||(Date.now()-st<45000);
-if(fresh)queue=queue.then(()=>send(h[4],h[5],h[2],h[3]));
-});
-firstRender=false;
-return S;
-}
-
-async function showPR(){
-if(!cfg.repo||mode!=='live')return;
-try{const ps=await gh('/repos/'+cfg.repo+'/pulls?state=all&per_page=10');
-const p=ps.find(x=>x.head&&x.head.ref.indexOf('agent/')===0);
-if(p){$('foot').innerHTML='';const a=document.createElement('a');a.href=p.html_url;a.target='_blank';a.rel='noopener';a.textContent='Latest agent pull request: #'+p.number+' '+p.title;$('foot').appendChild(a);}
-}catch(e){}}
-
-let cfg={repo:ls.get('agentRepo')||'',token:ls.get('agentTok')||''};
-let mode='none',timer=null;
-$('repo').value=cfg.repo;$('tok').value=cfg.token;
-async function gh(path){
-const h={Accept:'application/vnd.github+json'};
-if(cfg.token)h.Authorization='Bearer '+cfg.token;
-const r=await fetch('https://api.github.com'+path,{headers:h});
-if(!r.ok){const e=new Error('HTTP '+r.status);e.status=r.status;throw e;}
-return r.json();}
-
-async function poll(){
-if(mode!=='live')return;
-let active=false;
-try{
-const rs=await gh('/repos/'+cfg.repo+'/actions/workflows/agent-team.yml/runs?per_page=1');
-const run=rs.workflow_runs&&rs.workflow_runs[0];
-if(!run){render(null);$('sub').textContent='Connected. No agent runs yet. Add the agent-task label to an issue.';}
-else{
-const js=await gh('/repos/'+cfg.repo+'/actions/runs/'+run.id+'/jobs?per_page=30');
-const S=render(run,js.jobs);
-active=run.status!=='completed';
-if(!active&&prShown!==run.id){prShown=run.id;if(S&&S.finalize==='done')showPR();else $('foot').textContent='';}
-}
-}catch(e){
-$('sub').textContent=e.status===404?'Not found. Check the repo name, the token, and that agent-team.yml is pushed.':e.status===401||e.status===403?'GitHub refused the request ('+e.status+'). Check the token or wait for the rate limit to reset.':'Could not reach GitHub. Will retry.';
-}
-timer=setTimeout(poll,active?8000:(cfg.token?30000:120000));
-}
-function stop(){mode='none';clearTimeout(timer);clearInterval(demoTimer);}
-$('connect').onclick=()=>{
-const repo=$('repo').value.trim();
-if(!/^[\w.-]+\/[\w.-]+$/.test(repo)){$('sub').textContent='Enter the repository as owner/name.';return;}
-stop();cfg={repo,token:$('tok').value.trim()};ls.set('agentRepo',cfg.repo);ls.set('agentTok',cfg.token);
-played=new Set();firstRender=true;prShown='';$('foot').textContent='';
-mode='live';$('sub').textContent='Connecting…';$('set').open=false;poll();};
-
-let demoTimer=null;
-$('demo').onclick=()=>{
-stop();played=new Set();firstRender=false;$('foot').textContent='Demo mode with made-up data.';$('set').open=false;
-const phases=[['manager',4],['developer',6],['qa',5],['developer-fix',4],['qa-retest',4],['finalize',3]];
-const t0=Date.now();let cum=0;const sched=phases.map(p=>{const s=cum;cum+=p[1];return {name:p[0],s,e:cum};});
-const total=cum;mode='demo';
-function tick(){
-const t=(Date.now()-t0)/1000;
-const jobs=sched.map(p=>({name:p.name,status:t<p.s?'queued':t<p.e?'in_progress':'completed',conclusion:t>=p.e?'success':null,started_at:t>=p.s?new Date(t0+p.s*1000).toISOString():null,
-steps:(p.name==='qa'&&t>=p.e)?[{name:'Verdict: FAIL',status:'completed'}]:(p.name==='qa-retest'&&t>=p.e)?[{name:'Verdict: PASS',status:'completed'}]:[]}));
-render({id:'demo',status:t>=total?'completed':'in_progress',conclusion:'success',display_title:'Demo task: add a shipping label export',html_url:'#'},jobs);
-if(t>total+6){clearInterval(demoTimer);mode='none';render(null);$('sub').textContent='Demo finished. Connect a repository to see real runs.';}
-}
-tick();demoTimer=setInterval(tick,1000);};
-
-if(cfg.repo){$('connect').click();}
-</script>
+<script src="app.js"></script>
 </body>
 </html>

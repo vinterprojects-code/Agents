@@ -1,4 +1,6 @@
 name: Agent team
+# The control panel (dashboard/) reads the issue number from this name.
+run-name: "Agent team · issue #${{ github.event.issue.number || inputs.issue }}"
 
 # Standby by default. The team starts when you add the "agent-task" label to an issue.
 # Chain: manager -> developer -> qa -> (developer-fix -> qa-retest, only if QA fails) -> finalize
@@ -12,7 +14,9 @@ on:
         required: true
 
 concurrency:
-  group: agent-team-${{ github.event.issue.number || inputs.issue }}
+  # An issue created with several labels fires one "labeled" event per label. Runs for the other
+  # labels are skipped, so give them their own group: they must never replace the real run in the queue.
+  group: ${{ (github.event_name == 'workflow_dispatch' || github.event.label.name == 'agent-task') && format('agent-team-{0}', github.event.issue.number || inputs.issue) || format('agent-team-other-{0}', github.run_id) }}
   cancel-in-progress: false
 
 env:
@@ -37,7 +41,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: ./.github/actions/agent
+      # The "agent:developer" label means the owner chose to skip planning.
+      - name: Choose the starting agent
+        id: start
+        run: |
+          if gh issue view "$ISSUE" --json labels -q '.labels[].name' | grep -qx 'agent:developer'; then
+            echo "agent=developer" >> "$GITHUB_OUTPUT"
+          else
+            echo "agent=manager" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: "Manager: planning"
+        if: steps.start.outputs.agent == 'manager'
+        uses: ./.github/actions/agent
         with:
           persona: manager
           out_file: plan.md
@@ -51,6 +67,26 @@ jobs:
             Goal, Acceptance criteria (3 to 6 items that can be checked as pass or fail), Files likely to change, Risks.
             If the request is too unclear or risky to start, make the very first line of plan.md exactly "NEEDS_INPUT:"
             followed by your questions for the owner, then stop.
+
+      - name: "Manager: skip planning (owner chose the developer)"
+        if: steps.start.outputs.agent == 'developer'
+        env:
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          mkdir -p agent_handoff
+          gh issue view "$ISSUE" --json title,body,comments | jq -r --arg owner "$OWNER" \
+            '"# " + .title + "\n\n" + (.body // "") + "\n\n" + (.comments | map(select(.author.login == $owner)) | map("---\nComment by " + .author.login + ":\n" + .body) | join("\n"))' \
+            > agent_handoff/issue.md
+          { echo "Planning was skipped: the owner chose to start with the developer."
+            echo "Treat the issue below as the plan. Its \"Done when\" items are the acceptance criteria."
+            echo; cat agent_handoff/issue.md; } > agent_handoff/plan.md
+
+      - name: Pass the plan to the developer
+        if: steps.start.outputs.agent == 'developer'
+        uses: actions/upload-artifact@v4
+        with:
+          name: handoff-manager
+          path: agent_handoff/
 
       - name: Post the plan on the issue
         id: plan
@@ -97,7 +133,8 @@ jobs:
       #     php-version: "8.1"
       # - run: composer install --no-interaction
 
-      - uses: ./.github/actions/agent
+      - name: "Developer: coding"
+        uses: ./.github/actions/agent
         with:
           persona: developer
           out_file: dev-notes-1.md
@@ -142,7 +179,8 @@ jobs:
       #     php-version: "8.1"
       # - run: composer install --no-interaction
 
-      - uses: ./.github/actions/agent
+      - name: "QA: testing"
+        uses: ./.github/actions/agent
         with:
           persona: qa
           out_file: qa-report-1.md
@@ -184,7 +222,8 @@ jobs:
           ref: agent/issue-${{ github.event.issue.number || inputs.issue }}
           fetch-depth: 0
 
-      - uses: ./.github/actions/agent
+      - name: "Developer: fixing QA findings"
+        uses: ./.github/actions/agent
         with:
           persona: developer
           out_file: dev-notes-2.md
@@ -223,7 +262,8 @@ jobs:
           ref: agent/issue-${{ github.event.issue.number || inputs.issue }}
           fetch-depth: 0
 
-      - uses: ./.github/actions/agent
+      - name: "QA: re-testing"
+        uses: ./.github/actions/agent
         with:
           persona: qa
           out_file: qa-report-2.md
@@ -257,6 +297,7 @@ jobs:
       contents: read
       issues: write
       pull-requests: write
+      statuses: write
       id-token: write
       actions: read
     steps:
@@ -265,7 +306,8 @@ jobs:
           ref: agent/issue-${{ github.event.issue.number || inputs.issue }}
           fetch-depth: 0
 
-      - uses: ./.github/actions/agent
+      - name: "Manager: writing the pull request"
+        uses: ./.github/actions/agent
         with:
           persona: manager
           out_file: pr.md
@@ -301,5 +343,9 @@ jobs:
           else
             gh pr create --base "$BASE" --head "$BRANCH" --title "$TITLE" --body-file body.md $DRAFT
           fi
+          # Publish the verdict as a commit status, so the control panel and GitHub show it as a check.
+          if [ "$VERDICT" = "PASS" ]; then STATE=success; else STATE=failure; fi
+          gh api "repos/$GITHUB_REPOSITORY/statuses/$(git rev-parse HEAD)" -f state="$STATE" \
+            -f context="Agent QA" -f description="QA verdict: ${VERDICT:-UNKNOWN}" >/dev/null || echo "::warning::Could not set the Agent QA status"
           URL=$(gh pr view "$BRANCH" --json url -q .url)
           gh issue comment "$ISSUE" --body "Pull request ready: $URL (QA verdict: ${VERDICT:-UNKNOWN})"
