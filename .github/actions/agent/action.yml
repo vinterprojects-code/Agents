@@ -72,6 +72,17 @@ runs:
           --max-turns ${{ inputs.max_turns }}
           --allowedTools "${{ inputs.allowed_tools }}"
 
+    # claude-code-action points git at its own app token and revokes that token when it ends.
+    # Give git the workflow token back so later steps can push.
+    - name: Restore git access
+      if: always()
+      shell: bash
+      env:
+        TOKEN: ${{ github.token }}
+      run: |
+        git config --local --unset-all http.https://github.com/.extraheader || true
+        git remote set-url origin "https://x-access-token:${TOKEN}@${GITHUB_SERVER_URL#https://}/${GITHUB_REPOSITORY}.git"
+
     - name: Show why the agent stopped
       if: failure()
       shell: bash
