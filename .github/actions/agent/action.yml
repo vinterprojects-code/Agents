@@ -49,12 +49,15 @@ runs:
       env:
         GH_TOKEN: ${{ github.token }}
         ISSUE: ${{ inputs.issue }}
+        OWNER: ${{ github.repository_owner }}
       run: |
-        gh issue view "$ISSUE" --json title,body,comments --jq \
-          '"# " + .title + "\n\n" + .body + "\n\n" + (.comments | map("---\nComment by " + .author.login + ":\n" + .body) | join("\n"))' \
+        # Only the repo owner's comments reach the agents, so strangers on a public repo can't give them instructions.
+        gh issue view "$ISSUE" --json title,body,comments | jq -r --arg owner "$OWNER" \
+          '"# " + .title + "\n\n" + (.body // "") + "\n\n" + (.comments | map(select(.author.login == $owner)) | map("---\nComment by " + .author.login + ":\n" + .body) | join("\n"))' \
           > agent_handoff/issue.md
 
     - name: Agent working
+      id: claude
       uses: anthropics/claude-code-action@v1
       with:
         claude_code_oauth_token: ${{ inputs.oauth_token }}
@@ -70,6 +73,31 @@ runs:
           --model claude-sonnet-5-5
           --max-turns ${{ inputs.max_turns }}
           --allowedTools "${{ inputs.allowed_tools }}"
+
+    # claude-code-action points git at its own app token and revokes that token when it ends.
+    # Give git the workflow token back so later steps can push.
+    - name: Restore git access
+      if: always()
+      shell: bash
+      env:
+        TOKEN: ${{ github.token }}
+      run: |
+        git config --local --unset-all http.https://github.com/.extraheader || true
+        git remote set-url origin "https://x-access-token:${TOKEN}@${GITHUB_SERVER_URL#https://}/${GITHUB_REPOSITORY}.git"
+
+    - name: Show why the agent stopped
+      if: failure()
+      shell: bash
+      env:
+        EXEC_FILE: ${{ steps.claude.outputs.execution_file }}
+      run: |
+        F="${EXEC_FILE:-$RUNNER_TEMP/claude-execution-output.json}"
+        if [ -f "$F" ]; then
+          jq -r '[.[] | select(.type == "result")] | last | "Result: \(.subtype)\n\(.result // .errors // "no message")"' "$F" || true
+          jq -r '.[] | select(.type == "assistant") | .message.content[]? | select(.type == "text") | .text' "$F" | tail -n 20 || true
+        else
+          echo "No execution log found."
+        fi
 
     - name: Guard read-only agents
       if: inputs.readonly == 'true'
