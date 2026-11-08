@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Testy Todo List</title>
+  <style>
+    body { font-family: sans-serif; max-width: 480px; margin: 2rem auto; padding: 0 1rem; }
+    button { padding: 0.5rem 1rem; font-size: 1rem; cursor: pointer; }
+    ul { padding-left: 1.5rem; }
+    li { margin: 0.4rem 0; }
+  </style>
+</head>
+<body>
+  <h1>Todo List</h1>
+  <button id="add-task" type="button">Add task</button>
+  <ul id="task-list"></ul>
+  <script>
+    var count = 0;
+    var list = document.getElementById('task-list');
+    document.getElementById('add-task').addEventListener('click', function () {
+      count += 1;
+      var li = document.createElement('li');
+      li.textContent = 'Task ' + count;
+      list.appendChild(li);
+    });
+  </script>
+</body>
+</html>
