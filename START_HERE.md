@@ -35,8 +35,9 @@ Run `git --version` and `gh auth status`.
    If GitHub says this needs a paid plan for private repos, tell me in one line and move on. The workflow never pushes to `main` anyway.
 
 ## Step 4: Secrets and the Claude GitHub app (manual, I do these)
-1. Tell me to run this in my own terminal and paste my key when prompted, so it never appears in this chat:
-   `gh secret set ANTHROPIC_API_KEY --repo OWNER/REPO`
+1. The team signs in with my Claude subscription, not an API key. Tell me to run `claude setup-token` in my own terminal,
+   then run this and paste the token when prompted, so it never appears in this chat:
+   `gh secret set CLAUDE_CODE_OAUTH_TOKEN --repo OWNER/REPO`
    Wait for me to confirm, then check with `gh secret list --repo OWNER/REPO`.
 2. Tell me to open https://github.com/apps/claude and install the app on this repo only. Wait for me to confirm.
 
