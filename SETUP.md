@@ -1,0 +1,66 @@
+# Setup: agent team on GitHub (about 20 minutes)
+
+## How it works
+You open an issue with the `agent-task` label. GitHub Actions then runs the agents as a chain:
+
+manager (plan) → developer (code) → qa (test) → developer-fix → qa-retest (only if QA fails) → manager (opens the pull request)
+
+Each agent writes a file in `agent_handoff/`, and the next agent reads it. The workflow handles all git work, so agents can never push to `main`.
+The dashboard reads the real job statuses from GitHub and animates each handoff.
+
+## 1. Add the files
+Copy everything in this folder into the root of your repo and push it:
+- `.github/workflows/agent-team.yml` (the chain)
+- `.github/actions/agent/action.yml` (runs one agent)
+- `.github/ISSUE_TEMPLATE/task.md`
+- `.claude/agents/manager.md`, `developer.md`, `qa.md`
+- `CLAUDE.md` (fill in "Project context" first)
+- `dashboard/index.html` (the live dashboard)
+
+If you used the earlier kit, delete `.github/workflows/agents.yml` so two workflows don't run.
+
+## 2. Install the Claude GitHub app
+Open https://github.com/apps/claude and install it on the repo.
+
+## 3. Add your API key
+Repo → Settings → Secrets and variables → Actions → New repository secret.
+Name: `ANTHROPIC_API_KEY`. Never paste the key into a file.
+
+## 4. Let Actions open pull requests
+Repo → Settings → Actions → General → Workflow permissions:
+- Choose "Read and write permissions"
+- Tick "Allow GitHub Actions to create and approve pull requests"
+
+## 5. Protect `main`
+Repo → Settings → Branches → add a rule for `main`: require a pull request, block direct pushes.
+
+## 6. Create the label
+Repo → Issues → Labels → New label named exactly `agent-task`.
+
+## 7. Set a spending cap
+In the Anthropic Console, set a monthly limit on the key. One task runs 4 to 6 agent steps, each capped by `max_turns` in the workflow.
+
+## 8. Try it
+Open a new issue from the "Agent task" template with a tiny request (for example, add one line to the README).
+Watch the Actions tab. After a few minutes you get a pull request, and the issue gets the manager's plan and a link to the PR.
+To start a task on an existing issue, add the `agent-task` label, or run the workflow by hand with the issue number.
+
+## 9. Open the dashboard
+Open `dashboard/index.html` in a browser (on your phone, host it anywhere static: GitHub Pages on a public repo, Netlify, or Cloudflare Pages).
+- Tap "Preview demo" to see it with made-up data.
+- To see real runs, enter `owner/repo` and tap Connect.
+- For a private repo, create a fine-grained token (GitHub → Settings → Developer settings → Personal access tokens) limited to that repo with read-only access to Actions, Pull requests, and Metadata. The token stays in your browser only.
+
+## If the manager needs an answer
+The manager posts questions on the issue and the chain stops. Answer in a comment, then remove and re-add the `agent-task` label.
+
+## Tuning
+- `max_turns` per agent in `agent-team.yml` controls how long each agent can work.
+- `allowed_tools` lists what each agent may run. Add your test commands there.
+- Uncomment the PHP setup lines in the `developer` and `qa` jobs so tests can run.
+- Only the repo owner can start the team. This is the `github.actor` check on the `manager` job.
+
+## Good to know
+- QA and the managers are read-only. If they change project files, the workflow reverts the change.
+- If QA still fails after the fix round, the pull request opens as a draft with the failures listed.
+- This kit was checked for syntax and the dashboard was tested against sample data, but it has not been run on a real repo yet. Expect to adjust small things on the first run, such as `allowed_tools` for your test commands.

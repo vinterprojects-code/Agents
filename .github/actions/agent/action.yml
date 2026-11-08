@@ -1,0 +1,98 @@
+name: Run agent
+description: Runs one agent of the team. Reads the handoff folder, does its job, and saves its output for the next agent.
+
+inputs:
+  persona:
+    description: Which agent file to follow (manager, developer, or qa)
+    required: true
+  out_file:
+    description: File name the agent writes inside agent_handoff/
+    required: true
+  instructions:
+    description: What this agent should do in this step
+    required: true
+  issue:
+    description: Issue number
+    required: true
+  api_key:
+    description: Anthropic API key
+    required: true
+  allowed_tools:
+    description: Comma-separated tools this agent may use
+    required: true
+  max_turns:
+    description: Max steps for this agent
+    default: "30"
+  readonly:
+    description: If true, any change to project files is reverted after the agent runs
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - name: Create handoff folder
+      shell: bash
+      run: |
+        mkdir -p agent_handoff
+        echo "agent_handoff/" >> .git/info/exclude
+
+    - name: Get work from earlier agents
+      uses: actions/download-artifact@v4
+      continue-on-error: true
+      with:
+        pattern: handoff-*
+        path: agent_handoff
+        merge-multiple: true
+
+    - name: Save the issue and its comments
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        ISSUE: ${{ inputs.issue }}
+      run: |
+        gh issue view "$ISSUE" --json title,body,comments --jq \
+          '"# " + .title + "\n\n" + .body + "\n\n" + (.comments | map("---\nComment by " + .author.login + ":\n" + .body) | join("\n"))' \
+          > agent_handoff/issue.md
+
+    - name: Agent working
+      uses: anthropics/claude-code-action@v1
+      with:
+        anthropic_api_key: ${{ inputs.api_key }}
+        prompt: |
+          You are the ${{ inputs.persona }} agent on a small software team.
+          Read CLAUDE.md and .claude/agents/${{ inputs.persona }}.md for your role and rules.
+          Task context is in the agent_handoff/ folder: issue.md plus files from earlier agents. Read what exists.
+          Write your result to agent_handoff/${{ inputs.out_file }}.
+          Do not run git commands, push, or open pull requests. The workflow does that.
+
+          ${{ inputs.instructions }}
+        claude_args: |
+          --model claude-sonnet-5-5
+          --max-turns ${{ inputs.max_turns }}
+          --allowedTools "${{ inputs.allowed_tools }}"
+
+    - name: Guard read-only agents
+      if: inputs.readonly == 'true'
+      shell: bash
+      run: |
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "::warning::A read-only agent changed project files. Reverting them."
+          git checkout -- .
+          git clean -fdq
+        fi
+
+    - name: Check the agent wrote its output
+      shell: bash
+      run: |
+        if [ ! -s "agent_handoff/${{ inputs.out_file }}" ]; then
+          echo "::error::The agent did not write agent_handoff/${{ inputs.out_file }}"
+          exit 1
+        fi
+
+    - name: Pass work to the next agent
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: handoff-${{ github.job }}
+        path: agent_handoff/
+        if-no-files-found: warn

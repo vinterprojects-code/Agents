@@ -1,0 +1,305 @@
+name: Agent team
+
+# Standby by default. The team starts when you add the "agent-task" label to an issue.
+# Chain: manager -> developer -> qa -> (developer-fix -> qa-retest, only if QA fails) -> finalize
+on:
+  issues:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: Issue number to work on
+        required: true
+
+concurrency:
+  group: agent-team-${{ github.event.issue.number || inputs.issue }}
+  cancel-in-progress: false
+
+env:
+  ISSUE: ${{ github.event.issue.number || inputs.issue }}
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  # ---------------------------------------------------------------- manager
+  manager:
+    name: manager
+    # Only the repo owner can start the team.
+    if: github.actor == github.repository_owner && (github.event_name == 'workflow_dispatch' || github.event.label.name == 'agent-task')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+      actions: read
+    outputs:
+      blocked: ${{ steps.plan.outputs.blocked }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/agent
+        with:
+          persona: manager
+          out_file: plan.md
+          issue: ${{ env.ISSUE }}
+          api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          allowed_tools: "Read,Glob,Grep,Write"
+          max_turns: "12"
+          readonly: "true"
+          instructions: |
+            Read agent_handoff/issue.md. Write a short plan to agent_handoff/plan.md with these sections:
+            Goal, Acceptance criteria (3 to 6 items that can be checked as pass or fail), Files likely to change, Risks.
+            If the request is too unclear or risky to start, make the very first line of plan.md exactly "NEEDS_INPUT:"
+            followed by your questions for the owner, then stop.
+
+      - name: Post the plan on the issue
+        id: plan
+        run: |
+          if head -1 agent_handoff/plan.md | grep -q '^NEEDS_INPUT:'; then
+            echo "blocked=true" >> "$GITHUB_OUTPUT"
+            { echo "### Manager needs your input"; echo; tail -n +2 agent_handoff/plan.md; echo; echo "Answer in a comment, then remove and re-add the \`agent-task\` label to restart."; } > comment.md
+          else
+            echo "blocked=false" >> "$GITHUB_OUTPUT"
+            { echo "### Manager plan"; echo; cat agent_handoff/plan.md; } > comment.md
+          fi
+          gh issue comment "$ISSUE" --body-file comment.md
+
+  # -------------------------------------------------------------- developer
+  developer:
+    name: developer
+    needs: manager
+    if: needs.manager.outputs.blocked != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      issues: read
+      id-token: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Switch to the agent branch
+        run: |
+          BRANCH="agent/issue-$ISSUE"
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            git fetch origin "$BRANCH"
+            git switch -C "$BRANCH" "origin/$BRANCH"
+          else
+            git switch -c "$BRANCH"
+          fi
+
+      # Optional: install your project's tools so tests can run.
+      # - uses: shivammathur/setup-php@v2
+      #   with:
+      #     php-version: "8.1"
+      # - run: composer install --no-interaction
+
+      - uses: ./.github/actions/agent
+        with:
+          persona: developer
+          out_file: dev-notes-1.md
+          issue: ${{ env.ISSUE }}
+          api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          allowed_tools: "Read,Write,Edit,Glob,Grep,Bash(php:*),Bash(composer:*),Bash(npm:*)"
+          max_turns: "40"
+          instructions: |
+            Read agent_handoff/plan.md and implement it by editing the repository files directly.
+            Run the project's tests if you can. Then write agent_handoff/dev-notes-1.md with:
+            what you changed, which files, how to test it, and anything you could not do.
+
+      - name: Commit and push
+        run: |
+          git config user.name "agent-team[bot]"
+          git config user.email "agent-team@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then echo "No file changes to commit."; else git commit -m "Agent: work on issue #$ISSUE (round 1)"; fi
+          git push origin "HEAD:refs/heads/agent/issue-$ISSUE"
+
+  # --------------------------------------------------------------------- qa
+  qa:
+    name: qa
+    needs: developer
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      issues: read
+      id-token: write
+      actions: read
+    outputs:
+      verdict: ${{ steps.verdict.outputs.verdict }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/issue-${{ github.event.issue.number || inputs.issue }}
+          fetch-depth: 0
+
+      # - uses: shivammathur/setup-php@v2
+      #   with:
+      #     php-version: "8.1"
+      # - run: composer install --no-interaction
+
+      - uses: ./.github/actions/agent
+        with:
+          persona: qa
+          out_file: qa-report-1.md
+          issue: ${{ env.ISSUE }}
+          api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          allowed_tools: "Read,Glob,Grep,Write,Bash(php:*),Bash(composer:*),Bash(npm:*),Bash(git diff:*),Bash(git log:*),Bash(git status)"
+          max_turns: "25"
+          readonly: "true"
+          instructions: |
+            Read agent_handoff/plan.md and agent_handoff/dev-notes-1.md. Test the changes against every acceptance criterion.
+            Run the tests and checks that apply. Write agent_handoff/qa-report-1.md with pass or fail for each criterion and,
+            for each failure, what you expected, what happened, and exact steps to reproduce.
+            Do NOT edit project files. The last line of the report must be exactly "VERDICT: PASS" or "VERDICT: FAIL".
+
+      - name: Read the verdict
+        id: verdict
+        run: |
+          V=$(grep -oE 'VERDICT: (PASS|FAIL)' agent_handoff/qa-report-1.md | tail -1 | awk '{print $2}')
+          echo "verdict=${V:-FAIL}" >> "$GITHUB_OUTPUT"
+
+      - name: "Verdict: ${{ steps.verdict.outputs.verdict }}"
+        run: echo "QA verdict is ${{ steps.verdict.outputs.verdict }}"
+
+  # ---------------------------------------------------------- developer-fix
+  developer-fix:
+    name: developer-fix
+    needs: qa
+    if: needs.qa.outputs.verdict == 'FAIL'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      issues: read
+      id-token: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/issue-${{ github.event.issue.number || inputs.issue }}
+          fetch-depth: 0
+
+      - uses: ./.github/actions/agent
+        with:
+          persona: developer
+          out_file: dev-notes-2.md
+          issue: ${{ env.ISSUE }}
+          api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          allowed_tools: "Read,Write,Edit,Glob,Grep,Bash(php:*),Bash(composer:*),Bash(npm:*)"
+          max_turns: "30"
+          instructions: |
+            Read agent_handoff/qa-report-1.md. Fix the root cause of every failure QA reported by editing the repository files.
+            Run the project's tests if you can. Then write agent_handoff/dev-notes-2.md with what you changed and why.
+
+      - name: Commit and push
+        run: |
+          git config user.name "agent-team[bot]"
+          git config user.email "agent-team@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then echo "No file changes to commit."; else git commit -m "Agent: fix QA findings on issue #$ISSUE (round 2)"; fi
+          git push origin "HEAD:refs/heads/agent/issue-$ISSUE"
+
+  # ---------------------------------------------------------------- qa-retest
+  qa-retest:
+    name: qa-retest
+    needs: developer-fix
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      issues: read
+      id-token: write
+      actions: read
+    outputs:
+      verdict: ${{ steps.verdict.outputs.verdict }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/issue-${{ github.event.issue.number || inputs.issue }}
+          fetch-depth: 0
+
+      - uses: ./.github/actions/agent
+        with:
+          persona: qa
+          out_file: qa-report-2.md
+          issue: ${{ env.ISSUE }}
+          api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          allowed_tools: "Read,Glob,Grep,Write,Bash(php:*),Bash(composer:*),Bash(npm:*),Bash(git diff:*),Bash(git log:*),Bash(git status)"
+          max_turns: "25"
+          readonly: "true"
+          instructions: |
+            Read agent_handoff/plan.md, qa-report-1.md and dev-notes-2.md. Re-test everything, with extra care on the earlier failures.
+            Write agent_handoff/qa-report-2.md. Do NOT edit project files.
+            The last line of the report must be exactly "VERDICT: PASS" or "VERDICT: FAIL".
+
+      - name: Read the verdict
+        id: verdict
+        run: |
+          V=$(grep -oE 'VERDICT: (PASS|FAIL)' agent_handoff/qa-report-2.md | tail -1 | awk '{print $2}')
+          echo "verdict=${V:-FAIL}" >> "$GITHUB_OUTPUT"
+
+      - name: "Verdict: ${{ steps.verdict.outputs.verdict }}"
+        run: echo "QA verdict is ${{ steps.verdict.outputs.verdict }}"
+
+  # --------------------------------------------------------------- finalize
+  finalize:
+    name: finalize
+    needs: [manager, developer, qa, developer-fix, qa-retest]
+    if: always() && needs.manager.outputs.blocked != 'true' && needs.developer.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+      id-token: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/issue-${{ github.event.issue.number || inputs.issue }}
+          fetch-depth: 0
+
+      - uses: ./.github/actions/agent
+        with:
+          persona: manager
+          out_file: pr.md
+          issue: ${{ env.ISSUE }}
+          api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          allowed_tools: "Read,Glob,Grep,Write,Bash(git diff:*),Bash(git log:*)"
+          max_turns: "12"
+          readonly: "true"
+          instructions: |
+            Read plan.md, the dev notes, and every QA report. Compare the final result with the acceptance criteria.
+            Write agent_handoff/pr.md. The first line must be "# " followed by a short pull request title.
+            Then add the sections Summary, Changes, Test results, Risks, Follow-ups.
+            Be honest: if the final QA verdict was FAIL or missing, say exactly what is still broken.
+            Do not add a "Closes" line. The workflow adds it.
+
+      - name: Open the pull request
+        env:
+          VERDICT: ${{ needs.qa-retest.outputs.verdict || needs.qa.outputs.verdict }}
+        run: |
+          BRANCH="agent/issue-$ISSUE"
+          BASE=$(gh repo view --json defaultBranchRef -q .defaultBranchRef.name)
+          git fetch origin "$BASE"
+          if [ "$(git rev-list --count "origin/$BASE..HEAD")" = "0" ]; then
+            gh issue comment "$ISSUE" --body "The team finished but made no file changes, so there is no pull request."
+            exit 0
+          fi
+          TITLE=$(head -1 agent_handoff/pr.md | sed 's/^# *//')
+          { tail -n +2 agent_handoff/pr.md; echo; echo "---"; echo "QA verdict: ${VERDICT:-UNKNOWN}"; echo; echo "Closes #$ISSUE"; } > body.md
+          DRAFT=""
+          if [ "$VERDICT" != "PASS" ]; then DRAFT="--draft"; fi
+          if gh pr view "$BRANCH" >/dev/null 2>&1; then
+            gh pr edit "$BRANCH" --title "$TITLE" --body-file body.md
+          else
+            gh pr create --base "$BASE" --head "$BRANCH" --title "$TITLE" --body-file body.md $DRAFT
+          fi
+          URL=$(gh pr view "$BRANCH" --json url -q .url)
+          gh issue comment "$ISSUE" --body "Pull request ready: $URL (QA verdict: ${VERDICT:-UNKNOWN})"
