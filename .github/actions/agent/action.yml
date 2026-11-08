@@ -49,9 +49,11 @@ runs:
       env:
         GH_TOKEN: ${{ github.token }}
         ISSUE: ${{ inputs.issue }}
+        OWNER: ${{ github.repository_owner }}
       run: |
-        gh issue view "$ISSUE" --json title,body,comments --jq \
-          '"# " + .title + "\n\n" + .body + "\n\n" + (.comments | map("---\nComment by " + .author.login + ":\n" + .body) | join("\n"))' \
+        # Only the repo owner's comments reach the agents, so strangers on a public repo can't give them instructions.
+        gh issue view "$ISSUE" --json title,body,comments | jq -r --arg owner "$OWNER" \
+          '"# " + .title + "\n\n" + (.body // "") + "\n\n" + (.comments | map(select(.author.login == $owner)) | map("---\nComment by " + .author.login + ":\n" + .body) | join("\n"))' \
           > agent_handoff/issue.md
 
     - name: Agent working
