@@ -22,9 +22,12 @@ If you used the earlier kit, delete `.github/workflows/agents.yml` so two workfl
 ## 2. Install the Claude GitHub app
 Open https://github.com/apps/claude and install it on the repo.
 
-## 3. Add your API key
+## 3. Add your Claude sign-in token
+The team uses your Claude Pro or Max subscription, not an API key.
+On your own computer, install Claude Code (`npm install -g @anthropic-ai/claude-code`), then run `claude setup-token`
+and sign in with your claude.ai account. It prints a long-lived token.
 Repo → Settings → Secrets and variables → Actions → New repository secret.
-Name: `ANTHROPIC_API_KEY`. Never paste the key into a file.
+Name: `CLAUDE_CODE_OAUTH_TOKEN`. Paste the token there. Never paste it into a file or a chat.
 
 ## 4. Let Actions open pull requests
 Repo → Settings → Actions → General → Workflow permissions:
@@ -37,8 +40,9 @@ Repo → Settings → Branches → add a rule for `main`: require a pull request
 ## 6. Create the label
 Repo → Issues → Labels → New label named exactly `agent-task`.
 
-## 7. Set a spending cap
-In the Anthropic Console, set a monthly limit on the key. One task runs 4 to 6 agent steps, each capped by `max_turns` in the workflow.
+## 7. Watch your usage limits
+Agent runs count against your Claude subscription's usage limits, the same as using Claude yourself.
+One task runs 4 to 6 agent steps, each capped by `max_turns` in the workflow. If you hit the limit, jobs fail until it resets.
 
 ## 8. Try it
 Open a new issue from the "Agent task" template with a tiny request (for example, add one line to the README).

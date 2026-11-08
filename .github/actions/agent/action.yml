@@ -14,8 +14,8 @@ inputs:
   issue:
     description: Issue number
     required: true
-  api_key:
-    description: Anthropic API key
+  oauth_token:
+    description: Claude subscription token from `claude setup-token` (stored as the CLAUDE_CODE_OAUTH_TOKEN secret)
     required: true
   allowed_tools:
     description: Comma-separated tools this agent may use
@@ -57,7 +57,7 @@ runs:
     - name: Agent working
       uses: anthropics/claude-code-action@v1
       with:
-        anthropic_api_key: ${{ inputs.api_key }}
+        claude_code_oauth_token: ${{ inputs.oauth_token }}
         prompt: |
           You are the ${{ inputs.persona }} agent on a small software team.
           Read CLAUDE.md and .claude/agents/${{ inputs.persona }}.md for your role and rules.

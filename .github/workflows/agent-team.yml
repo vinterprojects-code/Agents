@@ -42,7 +42,7 @@ jobs:
           persona: manager
           out_file: plan.md
           issue: ${{ env.ISSUE }}
-          api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           allowed_tools: "Read,Glob,Grep,Write"
           max_turns: "12"
           readonly: "true"
@@ -102,7 +102,7 @@ jobs:
           persona: developer
           out_file: dev-notes-1.md
           issue: ${{ env.ISSUE }}
-          api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           allowed_tools: "Read,Write,Edit,Glob,Grep,Bash(php:*),Bash(composer:*),Bash(npm:*)"
           max_turns: "40"
           instructions: |
@@ -147,7 +147,7 @@ jobs:
           persona: qa
           out_file: qa-report-1.md
           issue: ${{ env.ISSUE }}
-          api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           allowed_tools: "Read,Glob,Grep,Write,Bash(php:*),Bash(composer:*),Bash(npm:*),Bash(git diff:*),Bash(git log:*),Bash(git status)"
           max_turns: "25"
           readonly: "true"
@@ -189,7 +189,7 @@ jobs:
           persona: developer
           out_file: dev-notes-2.md
           issue: ${{ env.ISSUE }}
-          api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           allowed_tools: "Read,Write,Edit,Glob,Grep,Bash(php:*),Bash(composer:*),Bash(npm:*)"
           max_turns: "30"
           instructions: |
@@ -228,7 +228,7 @@ jobs:
           persona: qa
           out_file: qa-report-2.md
           issue: ${{ env.ISSUE }}
-          api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           allowed_tools: "Read,Glob,Grep,Write,Bash(php:*),Bash(composer:*),Bash(npm:*),Bash(git diff:*),Bash(git log:*),Bash(git status)"
           max_turns: "25"
           readonly: "true"
@@ -270,7 +270,7 @@ jobs:
           persona: manager
           out_file: pr.md
           issue: ${{ env.ISSUE }}
-          api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           allowed_tools: "Read,Glob,Grep,Write,Bash(git diff:*),Bash(git log:*)"
           max_turns: "12"
           readonly: "true"
