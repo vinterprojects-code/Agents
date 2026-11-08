@@ -15,7 +15,7 @@ Copy everything in this folder into the root of your repo and push it:
 - `.github/ISSUE_TEMPLATE/task.md`
 - `.claude/agents/manager.md`, `developer.md`, `qa.md`
 - `CLAUDE.md` (fill in "Project context" first)
-- `dashboard/index.html` (the live dashboard)
+- `dashboard/` (the Agent Control Panel)
 
 If you used the earlier kit, delete `.github/workflows/agents.yml` so two workflows don't run.
 
@@ -49,11 +49,9 @@ Open a new issue from the "Agent task" template with a tiny request (for example
 Watch the Actions tab. After a few minutes you get a pull request, and the issue gets the manager's plan and a link to the PR.
 To start a task on an existing issue, add the `agent-task` label, or run the workflow by hand with the issue number.
 
-## 9. Open the dashboard
-Open `dashboard/index.html` in a browser (on your phone, host it anywhere static: GitHub Pages on a public repo, Netlify, or Cloudflare Pages).
-- Tap "Preview demo" to see it with made-up data.
-- To see real runs, enter `owner/repo` and tap Connect.
-- For a private repo, create a fine-grained token (GitHub → Settings → Developer settings → Personal access tokens) limited to that repo with read-only access to Actions, Pull requests, and Metadata. The token stays in your browser only.
+## 9. Open the control panel
+Turn on GitHub Pages (Settings → Pages → Deploy from a branch → `main`, `/ (root)`), then open `https://OWNER.github.io/REPO/dashboard/`.
+It needs a fine-grained token for the repo. The README section "Create the token" lists the exact permissions.
 
 ## If the manager needs an answer
 The manager posts questions on the issue and the chain stops. Answer in a comment, then remove and re-add the `agent-task` label.
@@ -67,4 +65,4 @@ The manager posts questions on the issue and the chain stops. Answer in a commen
 ## Good to know
 - QA and the managers are read-only. If they change project files, the workflow reverts the change.
 - If QA still fails after the fix round, the pull request opens as a draft with the failures listed.
-- This kit was checked for syntax and the dashboard was tested against sample data, but it has not been run on a real repo yet. Expect to adjust small things on the first run, such as `allowed_tools` for your test commands.
+- The chain and the control panel have been run end to end on a real repo. You may still need to add your own test commands to `allowed_tools`.
